@@ -72,10 +72,8 @@ impl QuestionsEditor {
 	pub fn start_editor() {
 		let editor = QuestionsEditor::new();
 		editor.init();
-		//let mut conversations = CoversationInteractor::new();
-		//phrases_init(&mut conversations);
-		
-		let mut conversations : CoversationInteractor = serde_json::from_str(&QuestionsEditor::read_from_file().unwrap()).unwrap();
+
+		let mut conversations = QuestionsEditor::load_or_create_default_game();
 		let mut editor_settings = QuestionsEditorSettings::new();
 		editor.view_last_question(&mut conversations, &mut editor_settings);
 
@@ -96,7 +94,6 @@ impl QuestionsEditor {
 			settings.set_current_question_index(&question_index);
 			
 			let phrase_index = &conversations.0.questions[question_index.0].question_id;
-			//let phrase_index = &conversations.0.questions[question_index.0].question_id;
 			
 
 	        if settings.mode == EditorMode::None {
@@ -294,6 +291,40 @@ impl QuestionsEditor {
 	    file.read_to_string(&mut contents)?;
 	    //assert_eq!(contents, "Hello, world!");
 	    Ok(contents)
+	}
+
+	pub fn load_or_create_default_game() -> CoversationInteractor {
+		match QuestionsEditor::read_from_file() {
+			Ok(contents) => {
+				match serde_json::from_str(&contents) {
+					Ok(conversations) => conversations,
+					Err(_) => {
+						println!("Warning: Invalid game_config.txt format. Creating default game...");
+						QuestionsEditor::create_default_game()
+					}
+				}
+			},
+			Err(_) => {
+				println!("No game_config.txt found. Creating default game...");
+				QuestionsEditor::create_default_game()
+			}
+		}
+	}
+
+	pub fn create_default_game() -> CoversationInteractor {
+		let mut conversations = CoversationInteractor::new();
+
+		// Create a simple default game
+		conversations.add_end_game("Welcome to Text Adventures Engine!");
+		conversations.add_question("What would you like to do?", "Start the editor");
+		conversations.add_question("Great choice! Use 'cargo run editor' to create your adventure.", "Continue");
+
+		// Save the default game
+		let j = serde_json::to_string(&conversations).unwrap();
+		QuestionsEditor::write_to_file(j.as_bytes()).unwrap();
+		println!("Default game created! Use 'cargo run editor' to customize it.");
+
+		conversations
 	}
 
 	fn write_to_file(stream: &[u8]) -> std::io::Result<()> {

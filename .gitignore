@@ -15,3 +15,6 @@ Cargo.lock
 
 # JetBrains IDEs (IntelliJ IDEA, CLion, RustRover, etc.)
 .idea/
+
+# Game configuration files (generated at runtime)
+game_config.txt

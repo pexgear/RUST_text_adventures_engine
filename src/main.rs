@@ -16,7 +16,7 @@ fn main() {
     if args.len() > 1 && args[1] == "editor".to_string() {
         QuestionsEditor::start_editor();
     } else {
-        let conversations : CoversationInteractor = serde_json::from_str(&QuestionsEditor::read_from_file().unwrap()).unwrap();
+        let conversations = QuestionsEditor::load_or_create_default_game();
         main_questions_cycle(&conversations);
     }
 }
