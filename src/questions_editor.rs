@@ -73,12 +73,23 @@ impl QuestionsEditor {
 		let editor = QuestionsEditor::new();
 		editor.init();
 
-		let mut conversations = QuestionsEditor::load_or_create_default_game();
+		let mut conversations = QuestionsEditor::load_or_create_empty_game();
+
+		// If it's a new empty game, guide the user
+		if conversations.0.questions.is_empty() {
+			println!("🎯 Let's create your first question!");
+			println!("💡 Tip: You can use --edit, --next, --prev to navigate");
+			println!("📚 Use --nw to create new questions\n");
+
+			// Create the first question to get started
+			conversations.add_end_game("Welcome to your adventure!");
+			conversations.add_question("This is your first question. Edit it!", "Your first answer");
+		}
+
 		let mut editor_settings = QuestionsEditorSettings::new();
 		editor.view_last_question(&mut conversations, &mut editor_settings);
 
 		let j = serde_json::to_string(&conversations).unwrap();
-
 		QuestionsEditor::write_to_file(j.as_bytes()).unwrap();
 	}
 
@@ -293,38 +304,30 @@ impl QuestionsEditor {
 	    Ok(contents)
 	}
 
-	pub fn load_or_create_default_game() -> CoversationInteractor {
+	pub fn load_existing_game() -> Option<CoversationInteractor> {
 		match QuestionsEditor::read_from_file() {
 			Ok(contents) => {
 				match serde_json::from_str(&contents) {
-					Ok(conversations) => conversations,
+					Ok(conversations) => Some(conversations),
 					Err(_) => {
-						println!("Warning: Invalid game_config.txt format. Creating default game...");
-						QuestionsEditor::create_default_game()
+						println!("⚠️  Warning: Invalid game_config.txt format.");
+						println!("🔧 Starting editor to fix the game...\n");
+						None
 					}
 				}
 			},
-			Err(_) => {
-				println!("No game_config.txt found. Creating default game...");
-				QuestionsEditor::create_default_game()
-			}
+			Err(_) => None // No file found
 		}
 	}
 
-	pub fn create_default_game() -> CoversationInteractor {
-		let mut conversations = CoversationInteractor::new();
-
-		// Create a simple default game
-		conversations.add_end_game("Welcome to Text Adventures Engine!");
-		conversations.add_question("What would you like to do?", "Start the editor");
-		conversations.add_question("Great choice! Use 'cargo run editor' to create your adventure.", "Continue");
-
-		// Save the default game
-		let j = serde_json::to_string(&conversations).unwrap();
-		QuestionsEditor::write_to_file(j.as_bytes()).unwrap();
-		println!("Default game created! Use 'cargo run editor' to customize it.");
-
-		conversations
+	pub fn load_or_create_empty_game() -> CoversationInteractor {
+		match QuestionsEditor::load_existing_game() {
+			Some(conversations) => conversations,
+			None => {
+				println!("📝 Creating a new empty game for editing...");
+				CoversationInteractor::new()
+			}
+		}
 	}
 
 	fn write_to_file(stream: &[u8]) -> std::io::Result<()> {

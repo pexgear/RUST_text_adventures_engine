@@ -16,8 +16,18 @@ fn main() {
     if args.len() > 1 && args[1] == "editor".to_string() {
         QuestionsEditor::start_editor();
     } else {
-        let conversations = QuestionsEditor::load_or_create_default_game();
-        main_questions_cycle(&conversations);
+        // Check if game file exists
+        match QuestionsEditor::load_existing_game() {
+            Some(conversations) => {
+                main_questions_cycle(&conversations);
+            },
+            None => {
+                println!("🎮 Welcome to Text Adventures Engine!");
+                println!("📝 No game found. Let's create your first adventure!");
+                println!("🚀 Starting the editor...\n");
+                QuestionsEditor::start_editor();
+            }
+        }
     }
 }
 
